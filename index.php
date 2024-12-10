@@ -14,7 +14,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/api/') === 0) {
 $userServername = "localhost";
 $userUsername = "root";
 $userPassword = "H&ptiot2024";
-$userDbname = "user";
+$userDbname = "User-OpenVidu";
 
 // Database connection details for the sensor
 $sensorServername = "localhost";
@@ -71,12 +71,10 @@ if (isset($uriSegments[0]) && $uriSegments[0] === 'api') {
             // Registration Logic
             if (isset($data['username']) && isset($data['password'])) {
                 $reg_username = $connUser->real_escape_string($data['username']);
-                $reg_password = password_hash($connUser->real_escape_string($data['password']), PASSWORD_BCRYPT);
+                $reg_password_hash = password_hash($connUser->real_escape_string($data['password']), PASSWORD_BCRYPT);
 
                 // Check if username already exists
-
-
-                $stmt = $connUser->prepare("SELECT username FROM users WHERE username = ?");
+                $stmt = $connUser->prepare("SELECT user_id FROM users WHERE username = ?");
                 $stmt->bind_param("s", $reg_username);
                 $stmt->execute();
                 $stmt->store_result();
@@ -86,8 +84,8 @@ if (isset($uriSegments[0]) && $uriSegments[0] === 'api') {
                 } else {
                     // Insert new user
                     $stmt->close();
-                    $stmt = $connUser->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-                    $stmt->bind_param("ss", $reg_username, $reg_password);
+                    $stmt = $connUser->prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)");
+                    $stmt->bind_param("ss", $reg_username, $reg_password_hash);
                     
                     if ($stmt->execute()) {
                         echo json_encode(["message" => "Registration successful"]);
@@ -107,7 +105,7 @@ if (isset($uriSegments[0]) && $uriSegments[0] === 'api') {
                 $login_username = $connUser->real_escape_string($data['username']);
                 $login_password = $connUser->real_escape_string($data['password']);
 
-                $stmt = $connUser->prepare("SELECT password FROM users WHERE username = ?");
+                $stmt = $connUser->prepare("SELECT password_hash FROM users WHERE username = ?");
                 $stmt->bind_param("s", $login_username);
                 $stmt->execute();
                 $stmt->store_result();
@@ -152,10 +150,10 @@ if (isset($uriSegments[0]) && $uriSegments[0] === 'api') {
 if (isset($_POST['register'])) {
     if (isset($_POST['reg_username']) && isset($_POST['reg_password'])) {
         $reg_username = $connUser->real_escape_string($_POST['reg_username']);
-        $reg_password = password_hash($connUser->real_escape_string($_POST['reg_password']), PASSWORD_BCRYPT);
+        $reg_password_hash = password_hash($connUser->real_escape_string($_POST['reg_password']), PASSWORD_BCRYPT);
 
-        $stmt = $connUser->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-        $stmt->bind_param("ss", $reg_username, $reg_password);
+        $stmt = $connUser->prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)");
+        $stmt->bind_param("ss", $reg_username, $reg_password_hash);
 
         if ($stmt->execute()) {
             echo "<div class='alert alert-success'>Registration successful. <a href='#login'>Login here</a></div>";
@@ -174,7 +172,7 @@ if (isset($_POST['login'])) {
         $login_username = $connUser->real_escape_string($_POST['login_username']);
         $login_password = $connUser->real_escape_string($_POST['login_password']);
 
-        $stmt = $connUser->prepare("SELECT password FROM users WHERE username = ?");
+        $stmt = $connUser->prepare("SELECT password_hash FROM users WHERE username = ?");
         $stmt->bind_param("s", $login_username);
         $stmt->execute();
         $stmt->store_result();
@@ -400,7 +398,7 @@ $isLoggedIn = isset($_SESSION['username']);
                                 <th>Longitude</th>
                                 <th>Latitude</th>
                                 <th>Current Value</th>
-                                <th>TimeFlag</th> <!-- Added column for TimeFlag -->
+                                <th>TimeFlag</th>
                                 <th>Timestamp</th>
                             </tr>
                         </thead>
